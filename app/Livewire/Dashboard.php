@@ -19,7 +19,7 @@ class Dashboard extends Component
 
     public function mount(JobOfferService $service): void
     {
-        $data = $service->insights();
+        $data = $service->insights(auth()->id());
 
         $this->total        = $data['total'];
         $this->open         = $data['open'];

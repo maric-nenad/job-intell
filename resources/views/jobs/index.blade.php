@@ -10,6 +10,7 @@
             <livewire:job-offer-list />
             <livewire:job-offer-modal />
             <livewire:application-modal />
+            <livewire:job-offer-detail />
         </div>
     </div>
 </x-app-layout>

@@ -23,17 +23,33 @@ class JobOffer extends Model
         'is_remote',
         'status',
         'url',
+        'summary',
+        'skills',
         'posted_date',
         'notes',
+        'company_rating',
+        'company_rating_source',
+        'company_valuation',
+        'company_employees',
+        'company_owners',
+        'ats_probability',
+    ];
+
+    public static array $atsProbabilityLevels = [
+        'low'    => ['label' => 'Low',    'color' => 'green',  'hint' => 'Likely human review'],
+        'medium' => ['label' => 'Medium', 'color' => 'yellow', 'hint' => 'Possible ATS screening'],
+        'high'   => ['label' => 'High',   'color' => 'red',    'hint' => 'Likely automated ATS/AI screening'],
     ];
 
     protected function casts(): array
     {
         return [
-            'is_remote'   => 'boolean',
-            'salary_min'  => 'integer',
-            'salary_max'  => 'integer',
-            'posted_date' => 'date',
+            'is_remote'      => 'boolean',
+            'salary_min'     => 'integer',
+            'salary_max'     => 'integer',
+            'posted_date'    => 'date',
+            'skills'         => 'array',
+            'company_rating' => 'decimal:1',
         ];
     }
 

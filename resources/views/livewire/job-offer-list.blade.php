@@ -44,6 +44,7 @@
                             Position @if($sortBy === 'position') <span>{{ $sortDir === 'asc' ? '↑' : '↓' }}</span> @endif
                         </th>
                         <th class="px-4 py-3 text-left font-medium text-gray-500">Location</th>
+                        <th class="px-4 py-3 text-left font-medium text-gray-500">ATS Risk</th>
                         <th class="px-4 py-3 text-left font-medium text-gray-500">Salary</th>
                         <th class="px-4 py-3 text-left font-medium text-gray-500">Type</th>
                         <th class="px-4 py-3 text-left font-medium text-gray-500">My Status</th>
@@ -58,19 +59,52 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @forelse($jobOffers as $offer)
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-4 py-3 font-medium text-gray-900">
-                                {{ $offer->company }}
+                        <tr @click="$dispatch('open-job-offer-detail', { jobOfferId: {{ $offer->id }} })"
+                            class="hover:bg-gray-50 transition cursor-pointer">
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-gray-900">{{ $offer->company }}</div>
+                                @if($offer->company_rating)
+                                    <div class="flex items-center gap-1 mt-0.5">
+                                        @php $stars = round($offer->company_rating * 2) / 2; @endphp
+                                        @for($s = 1; $s <= 5; $s++)
+                                            @if($s <= floor($stars))
+                                                <svg class="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                            @elseif($stars - floor($stars) >= 0.5 && $s == ceil($stars))
+                                                <svg class="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.39 4.843 5.345.777-3.867 3.769.913 5.318L10 13.347V1z"/><path fill="#d1d5db" d="M10 1v12.347l-4.781 2.36.913-5.318L2.265 6.62l5.345-.777L10 1z"/></svg>
+                                            @else
+                                                <svg class="w-3 h-3 text-gray-200" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                            @endif
+                                        @endfor
+                                        <span class="text-xs text-gray-500 ml-0.5">{{ number_format($offer->company_rating, 1) }}
+                                            @if($offer->company_rating_source)
+                                                <span class="text-gray-400">· {{ $offer->company_rating_source }}</span>
+                                            @endif
+                                        </span>
+                                    </div>
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-gray-700">
                                 @if($offer->url)
-                                    <a href="{{ $offer->url }}" target="_blank" class="text-indigo-600 hover:underline">{{ $offer->position }}</a>
+                                    <a href="{{ $offer->url }}" target="_blank" @click.stop class="text-indigo-600 hover:underline">{{ $offer->position }}</a>
                                 @else
                                     {{ $offer->position }}
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-gray-600">
                                 {{ collect([$offer->city, $offer->country])->filter()->implode(', ') }}
+                            </td>
+                            <td class="px-4 py-3">
+                                @if($offer->ats_probability)
+                                    @php
+                                        $atsMeta = App\Models\JobOffer::$atsProbabilityLevels[$offer->ats_probability];
+                                        $atsColors = ['green' => 'bg-green-100 text-green-700', 'yellow' => 'bg-yellow-100 text-yellow-700', 'red' => 'bg-red-100 text-red-700'];
+                                    @endphp
+                                    <span title="{{ $atsMeta['hint'] }}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $atsColors[$atsMeta['color']] }}">
+                                        {{ $atsMeta['label'] }}
+                                    </span>
+                                @else
+                                    <span class="text-gray-300 text-xs">—</span>
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-gray-600 whitespace-nowrap">
                                 @if($offer->salary_min)
@@ -107,17 +141,17 @@
                             <td class="px-4 py-3 text-gray-400 whitespace-nowrap">
                                 {{ $offer->posted_date?->format('M d, Y') ?? '—' }}
                             </td>
-                            <td class="px-4 py-3 text-right whitespace-nowrap">
-                                <button @click="$dispatch('open-job-offer-edit', { id: {{ $offer->id }} })"
+                            <td class="px-4 py-3 text-right whitespace-nowrap" @click.stop>
+                                <button @click.stop="$dispatch('open-job-offer-edit', { id: {{ $offer->id }} })"
                                         class="text-xs font-medium px-2 py-1 rounded text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 transition-colors mr-1">Edit</button>
                                 @if(isset($myApplications[$offer->id]))
-                                    <button @click="$dispatch('open-application-modal', { jobOfferId: {{ $offer->id }} })"
+                                    <button @click.stop="$dispatch('open-application-modal', { jobOfferId: {{ $offer->id }} })"
                                             class="text-xs font-medium px-2 py-1 rounded text-green-700 hover:text-green-900 hover:bg-green-50 transition-colors mr-1">Track</button>
                                 @else
-                                    <button wire:click="saveOffer({{ $offer->id }})"
+                                    <button wire:click.stop="saveOffer({{ $offer->id }})"
                                             class="text-xs font-medium px-2 py-1 rounded text-teal-700 hover:text-teal-900 hover:bg-teal-50 transition-colors mr-1">Save</button>
                                 @endif
-                                <button wire:click="deleteOffer({{ $offer->id }})"
+                                <button wire:click.stop="deleteOffer({{ $offer->id }})"
                                         wire:confirm="Delete this job offer?"
                                         class="text-xs font-medium px-2 py-1 rounded text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors">Delete</button>
                             </td>

@@ -47,7 +47,7 @@ class JobOfferList extends Component
 
     public function deleteOffer(int $id): void
     {
-        JobOffer::findOrFail($id)->delete();
+        JobOffer::where('user_id', auth()->id())->findOrFail($id)->delete();
         $this->dispatch('notify', message: 'Job offer deleted.');
     }
 
@@ -70,7 +70,7 @@ class JobOfferList extends Component
 
     public function render()
     {
-        $query = JobOffer::query();
+        $query = JobOffer::where('user_id', auth()->id());
 
         if ($this->search) {
             $query->search($this->search);
@@ -88,7 +88,7 @@ class JobOfferList extends Component
         $query->orderBy($this->sortBy === 'posted_date' ? 'posted_date' : $this->sortBy, $this->sortDir)
               ->orderByDesc('id');
 
-        $countries = JobOffer::distinct()->orderBy('country')->pluck('country');
+        $countries = JobOffer::where('user_id', auth()->id())->distinct()->orderBy('country')->pluck('country');
 
         $jobOffers = $query->paginate($this->perPage);
 

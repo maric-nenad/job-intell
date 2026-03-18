@@ -104,6 +104,126 @@
                     @error('url') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
+                {{-- Summary --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Summary</label>
+                    <textarea wire:model="summary" rows="4" class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Brief summary of the role, responsibilities, and what makes it interesting..."></textarea>
+                </div>
+
+                {{-- Skills --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
+                    <div class="flex gap-2">
+                        <input wire:model="new_skill"
+                               wire:keydown.enter.prevent="addSkill"
+                               type="text"
+                               placeholder="e.g. Go, PostgreSQL, Kubernetes..."
+                               class="flex-1 rounded-lg border-gray-300 text-sm shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                        <button type="button" wire:click="addSkill"
+                                class="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition whitespace-nowrap">
+                            Add
+                        </button>
+                    </div>
+                    @if(!empty($skills))
+                        <div class="flex flex-wrap gap-1.5 mt-2">
+                            @foreach($skills as $i => $skill)
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                                    {{ $skill }}
+                                    <button type="button" wire:click="removeSkill({{ $i }})" class="text-indigo-400 hover:text-indigo-700 leading-none">&times;</button>
+                                </span>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Company Info --}}
+                <div class="border-t border-gray-100 pt-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Company Info</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Valuation</label>
+                            <input wire:model="company_valuation" type="text"
+                                   class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                   placeholder="e.g. $1.2B, Series B, Bootstrapped" />
+                            @error('company_valuation') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Number of Employees</label>
+                            <select wire:model="company_employees"
+                                    class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">Unknown</option>
+                                <option>1–10</option>
+                                <option>11–50</option>
+                                <option>51–200</option>
+                                <option>201–500</option>
+                                <option>501–1 000</option>
+                                <option>1 001–5 000</option>
+                                <option>5 001–10 000</option>
+                                <option>10 000+</option>
+                            </select>
+                            @error('company_employees') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Founders / Owners</label>
+                        <input wire:model="company_owners" type="text"
+                               class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                               placeholder="e.g. Patrick Collison, John Collison" />
+                        @error('company_owners') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                {{-- Company Rating --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Company Rating <span class="text-gray-400 font-normal">(1–5)</span></label>
+                        <div class="flex items-center gap-2">
+                            <input wire:model.live="company_rating" type="number" min="1" max="5" step="0.1"
+                                   class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                   placeholder="e.g. 4.2" />
+                        </div>
+                        @error('company_rating') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Rating Source</label>
+                        <input wire:model="company_rating_source" type="text"
+                               class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                               placeholder="Glassdoor, Kununu, LinkedIn..." />
+                        @error('company_rating_source') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                {{-- ATS / AI Screening Probability --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        ATS / AI Screening Probability
+                        <span class="font-normal text-gray-400 ml-1">— does this company auto-screen CVs?</span>
+                    </label>
+                    <div class="grid grid-cols-3 gap-2">
+                        @foreach(App\Models\JobOffer::$atsProbabilityLevels as $key => $meta)
+                            @php
+                                $btnColors = [
+                                    'green'  => 'border-green-300 bg-green-50 text-green-700',
+                                    'yellow' => 'border-yellow-300 bg-yellow-50 text-yellow-700',
+                                    'red'    => 'border-red-300 bg-red-50 text-red-700',
+                                ];
+                                $activeRing = [
+                                    'green'  => 'ring-2 ring-green-400',
+                                    'yellow' => 'ring-2 ring-yellow-400',
+                                    'red'    => 'ring-2 ring-red-400',
+                                ];
+                            @endphp
+                            <button type="button"
+                                    wire:click="$set('ats_probability', '{{ $ats_probability === $key ? '' : $key }}')"
+                                    class="px-2 py-2 rounded-lg border text-xs font-medium text-center transition {{ $btnColors[$meta['color']] }} {{ $ats_probability === $key ? $activeRing[$meta['color']] : 'opacity-60' }}">
+                                <div class="font-semibold">{{ $meta['label'] }}</div>
+                                <div class="text-xs font-normal opacity-80 mt-0.5">{{ $meta['hint'] }}</div>
+                            </button>
+                        @endforeach
+                    </div>
+                    @error('ats_probability') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
                 {{-- Notes --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>

@@ -39,22 +39,26 @@ class JobOfferService
         return $query->paginate($perPage);
     }
 
-    public function insights(): array
+    public function insights(int $userId): array
     {
-        $total   = JobOffer::count();
-        $open    = JobOffer::where('status', 'open')->count();
-        $closed  = JobOffer::where('status', 'closed')->count();
-        $remote  = JobOffer::where('is_remote', true)->count();
-        $onsite  = JobOffer::where('is_remote', false)->count();
+        $base = JobOffer::where('user_id', $userId);
 
-        $topCountries = JobOffer::select('country', DB::raw('count(*) as total'))
+        $total  = (clone $base)->count();
+        $open   = (clone $base)->where('status', 'open')->count();
+        $closed = (clone $base)->where('status', 'closed')->count();
+        $remote = (clone $base)->where('is_remote', true)->count();
+        $onsite = (clone $base)->where('is_remote', false)->count();
+
+        $topCountries = (clone $base)
+            ->select('country', DB::raw('count(*) as total'))
             ->groupBy('country')
             ->orderByDesc('total')
             ->limit(5)
             ->pluck('total', 'country')
             ->toArray();
 
-        $topCities = JobOffer::select('city', DB::raw('count(*) as total'))
+        $topCities = (clone $base)
+            ->select('city', DB::raw('count(*) as total'))
             ->whereNotNull('city')
             ->groupBy('city')
             ->orderByDesc('total')
@@ -62,14 +66,16 @@ class JobOfferService
             ->pluck('total', 'city')
             ->toArray();
 
-        $topCompanies = JobOffer::select('company', DB::raw('count(*) as total'))
+        $topCompanies = (clone $base)
+            ->select('company', DB::raw('count(*) as total'))
             ->groupBy('company')
             ->orderByDesc('total')
             ->limit(5)
             ->pluck('total', 'company')
             ->toArray();
 
-        $monthlyTrend = JobOffer::select(
+        $monthlyTrend = (clone $base)
+            ->select(
                 DB::raw("TO_CHAR(posted_date, 'Mon YYYY') as month"),
                 DB::raw("DATE_TRUNC('month', posted_date) as month_start"),
                 DB::raw('count(*) as total')

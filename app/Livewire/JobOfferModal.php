@@ -22,8 +22,17 @@ class JobOfferModal extends Component
     public bool $is_remote = false;
     public string $status = 'open';
     public string $url = '';
+    public string $summary = '';
+    public array $skills = [];
+    public string $new_skill = '';
     public string $posted_date = '';
     public string $notes = '';
+    public ?float $company_rating = null;
+    public string $company_rating_source = '';
+    public string $company_valuation = '';
+    public string $company_employees = '';
+    public string $company_owners = '';
+    public string $ats_probability = '';
 
     protected function rules(): array
     {
@@ -38,8 +47,16 @@ class JobOfferModal extends Component
             'is_remote'       => ['boolean'],
             'status'          => ['required', 'in:open,closed'],
             'url'             => ['nullable', 'url', 'max:2048'],
-            'posted_date'     => ['nullable', 'date'],
-            'notes'           => ['nullable', 'string'],
+            'summary'         => ['nullable', 'string'],
+            'skills'          => ['nullable', 'array'],
+            'posted_date'           => ['nullable', 'date'],
+            'notes'                 => ['nullable', 'string'],
+            'company_rating'        => ['nullable', 'numeric', 'min:1', 'max:5'],
+            'company_rating_source' => ['nullable', 'string', 'max:255'],
+            'company_valuation'     => ['nullable', 'string', 'max:255'],
+            'company_employees'     => ['nullable', 'string', 'max:255'],
+            'company_owners'        => ['nullable', 'string'],
+            'ats_probability'       => ['nullable', 'in:low,medium,high'],
         ];
     }
 
@@ -47,7 +64,9 @@ class JobOfferModal extends Component
     public function create(): void
     {
         $this->reset(['offerId', 'company', 'country', 'city', 'position',
-            'salary_min', 'salary_max', 'url', 'posted_date', 'notes']);
+            'salary_min', 'salary_max', 'url', 'summary', 'skills', 'new_skill', 'posted_date', 'notes',
+            'company_rating', 'company_rating_source', 'company_valuation', 'company_employees', 'company_owners',
+            'ats_probability']);
         $this->salary_currency = 'USD';
         $this->is_remote       = false;
         $this->status          = 'open';
@@ -57,7 +76,7 @@ class JobOfferModal extends Component
     #[On('open-job-offer-edit')]
     public function edit(int $id): void
     {
-        $offer = JobOffer::findOrFail($id);
+        $offer = JobOffer::where('user_id', auth()->id())->findOrFail($id);
 
         $this->offerId         = $offer->id;
         $this->company         = $offer->company;
@@ -70,19 +89,46 @@ class JobOfferModal extends Component
         $this->is_remote       = $offer->is_remote;
         $this->status          = $offer->status;
         $this->url             = $offer->url ?? '';
-        $this->posted_date     = $offer->posted_date?->format('Y-m-d') ?? '';
-        $this->notes           = $offer->notes ?? '';
-        $this->showModal       = true;
+        $this->summary         = $offer->summary ?? '';
+        $this->skills          = $offer->skills ?? [];
+        $this->new_skill       = '';
+        $this->posted_date            = $offer->posted_date?->format('Y-m-d') ?? '';
+        $this->notes                  = $offer->notes ?? '';
+        $this->company_rating         = $offer->company_rating;
+        $this->company_rating_source  = $offer->company_rating_source ?? '';
+        $this->company_valuation      = $offer->company_valuation ?? '';
+        $this->company_employees      = $offer->company_employees ?? '';
+        $this->company_owners         = $offer->company_owners ?? '';
+        $this->ats_probability        = $offer->ats_probability ?? '';
+        $this->showModal              = true;
+    }
+
+    public function addSkill(): void
+    {
+        $skill = trim($this->new_skill);
+        if ($skill !== '' && !in_array($skill, $this->skills)) {
+            $this->skills[] = $skill;
+        }
+        $this->new_skill = '';
+    }
+
+    public function removeSkill(int $index): void
+    {
+        array_splice($this->skills, $index, 1);
     }
 
     public function save(JobOfferService $service): void
     {
         $data = $this->validate();
+        unset($data['new_skill']);
 
         $data = array_map(fn($v) => $v === '' ? null : $v, $data);
+        if (isset($data['skills']) && $data['skills'] === []) {
+            $data['skills'] = null;
+        }
 
         if ($this->offerId) {
-            $service->update(JobOffer::findOrFail($this->offerId), $data);
+            $service->update(JobOffer::where('user_id', auth()->id())->findOrFail($this->offerId), $data);
         } else {
             $service->create($data, auth()->id());
         }
